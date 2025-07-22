@@ -311,7 +311,7 @@ const HomePage: React.FC = () => {
 			<footer className="footer">
 				&copy;{" "}
 				<a
-					href="https://asymptote-labs.com"
+					href="https://asymptotelabs.github.io"
 					target="_blank"
 					rel="noopener noreferrer"
 				>
