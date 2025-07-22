@@ -1,5 +1,3 @@
-Here's the updated `README.md` file with the live website link added:
-
 # InstaBin
 
 ---
