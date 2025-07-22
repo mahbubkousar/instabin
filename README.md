@@ -30,7 +30,7 @@ npm run install:all
 ---
 
 - **Frontend**: React 18 + TypeScript + Monaco Editor
-- **Backend**: Serverless functions (Vercel/Netlify)
+- **Backend**: Serverless functions (Netlify)
 - **Database**: Firebase Firestore
 - **Hosting**: Static deployment with global CDN
 
