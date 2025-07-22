@@ -87,14 +87,52 @@ const HomePage: React.FC = () => {
 
 			setShareUrl(shareUrl);
 
-			// Copy to clipboard
-			await navigator.clipboard.writeText(shareUrl);
-			showNotification("Link copied to clipboard! 🎉", "success");
+			// Copy to clipboard with fallback for mobile
+			try {
+				await copyToClipboard(shareUrl);
+				showNotification("Link copied to clipboard! 🎉", "success");
+			} catch (clipboardError) {
+				console.warn("Clipboard copy failed, but paste created successfully:", clipboardError);
+				showNotification("Paste created successfully! (Copy manually if needed)", "success");
+			}
 		} catch (error) {
 			console.error("Share error:", error);
 			showNotification("Failed to create paste. Please try again.", "error");
 		} finally {
 			setIsLoading(false);
+		}
+	};
+
+	const copyToClipboard = async (text: string): Promise<void> => {
+		// Modern clipboard API (works in HTTPS contexts)
+		if (navigator.clipboard && window.isSecureContext) {
+			try {
+				await navigator.clipboard.writeText(text);
+				return;
+			} catch (err) {
+				console.warn("Modern clipboard API failed:", err);
+			}
+		}
+
+		// Fallback method for mobile/older browsers
+		const textArea = document.createElement('textarea');
+		textArea.value = text;
+		textArea.style.position = 'fixed';
+		textArea.style.left = '-999999px';
+		textArea.style.top = '-999999px';
+		document.body.appendChild(textArea);
+		
+		try {
+			textArea.focus();
+			textArea.select();
+			textArea.setSelectionRange(0, 99999); // For mobile devices
+			
+			const successful = document.execCommand('copy');
+			if (!successful) {
+				throw new Error('execCommand failed');
+			}
+		} finally {
+			document.body.removeChild(textArea);
 		}
 	};
 
@@ -104,21 +142,23 @@ const HomePage: React.FC = () => {
 		notification.className = `notification notification-${type}`;
 		notification.textContent = message;
 
-		// Add styles
+		// Add styles - better positioning for mobile
 		Object.assign(notification.style, {
 			position: "fixed",
 			top: "20px",
-			right: "20px",
+			left: "50%",
+			transform: "translateX(-50%) translateY(-20px)",
 			padding: "12px 20px",
 			borderRadius: "8px",
 			color: "white",
 			fontWeight: "500",
 			zIndex: "10000",
 			opacity: "0",
-			transform: "translateY(-20px)",
 			transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 			backgroundColor: type === "success" ? "#4caf50" : "#f44336",
 			boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+			maxWidth: "90vw",
+			textAlign: "center",
 		});
 
 		document.body.appendChild(notification);
@@ -126,14 +166,18 @@ const HomePage: React.FC = () => {
 		// Animate in
 		requestAnimationFrame(() => {
 			notification.style.opacity = "1";
-			notification.style.transform = "translateY(0)";
+			notification.style.transform = "translateX(-50%) translateY(0)";
 		});
 
 		// Remove after 3 seconds
 		setTimeout(() => {
 			notification.style.opacity = "0";
-			notification.style.transform = "translateY(-20px)";
-			setTimeout(() => document.body.removeChild(notification), 300);
+			notification.style.transform = "translateX(-50%) translateY(-20px)";
+			setTimeout(() => {
+				if (document.body.contains(notification)) {
+					document.body.removeChild(notification);
+				}
+			}, 300);
 		}, 3000);
 	};
 
@@ -193,7 +237,14 @@ const HomePage: React.FC = () => {
 								className="share-url"
 							/>
 							<button
-								onClick={() => navigator.clipboard.writeText(shareUrl)}
+								onClick={async () => {
+									try {
+										await copyToClipboard(shareUrl);
+										showNotification("Link copied! 📋", "success");
+									} catch (err) {
+										showNotification("Please copy the link manually", "error");
+									}
+								}}
 								className="copy-btn"
 							>
 								Copy
