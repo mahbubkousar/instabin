@@ -21,7 +21,7 @@ Simple code sharing platform - paste code, get instant shareable links.
 
 ```bash
 # Clone and install
-git clone <repo-url> && cd instabin
+git clone https://github.com/mahbubkousar/instabin && cd instabin
 npm run install:all
 ```
 
