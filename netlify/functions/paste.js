@@ -1,6 +1,15 @@
 const admin = require('firebase-admin');
 const { nanoid } = require('nanoid');
 
+// Input validation helper
+const validateInput = (input, maxLength = 1000) => {
+  if (typeof input !== 'string') return false;
+  if (input.length > maxLength) return false;
+  // Basic XSS prevention - remove potential script tags
+  const cleaned = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  return cleaned;
+};
+
 // Initialize Firebase Admin
 let db;
 const initializeFirebase = () => {

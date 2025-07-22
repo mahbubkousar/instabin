@@ -166,7 +166,7 @@ const ViewPage: React.FC = () => {
             </div>
             <div className="editor-container">
               <Editor
-                height="calc(100vh - 120px)"
+                height="calc(100vh - 160px)"
                 language={paste.tabs[activeTabIndex]?.language || 'text'}
                 theme="vs-dark"
                 value={paste.tabs[activeTabIndex]?.content || ''}
@@ -190,7 +190,7 @@ const ViewPage: React.FC = () => {
         ) : (
           <div className="editor-container">
             <Editor
-              height="calc(100vh - 80px)"
+              height="calc(100vh - 120px)"
               language={paste.language}
               theme="vs-dark"
               value={paste.content}
@@ -212,6 +212,10 @@ const ViewPage: React.FC = () => {
           </div>
         )}
       </main>
+      
+      <footer className="footer">
+        Made with ❤️ by <a href="https://asymptote-labs.com" target="_blank" rel="noopener noreferrer">Asymptote Labs</a>
+      </footer>
     </div>
   );
 };

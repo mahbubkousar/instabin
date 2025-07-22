@@ -60,7 +60,7 @@ const HomePage: React.FC = () => {
     // Check if any tab has content
     const hasContent = tabs.some(tab => tab.content.trim());
     if (!hasContent) {
-      alert('Please enter some code in at least one tab to share');
+      showNotification('Please enter some code in at least one tab to share', 'error');
       return;
     }
 
@@ -84,12 +84,53 @@ const HomePage: React.FC = () => {
       setShareUrl(shareUrl);
       
       // Copy to clipboard
-      navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
+      showNotification('Link copied to clipboard! 🎉', 'success');
     } catch (error) {
-      alert('Failed to create paste. Please try again.');
+      console.error('Share error:', error);
+      showNotification('Failed to create paste. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error') => {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Add styles
+    Object.assign(notification.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      padding: '12px 20px',
+      borderRadius: '8px',
+      color: 'white',
+      fontWeight: '500',
+      zIndex: '10000',
+      opacity: '0',
+      transform: 'translateY(-20px)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backgroundColor: type === 'success' ? '#4caf50' : '#f44336',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+    });
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      notification.style.opacity = '1';
+      notification.style.transform = 'translateY(0)';
+    });
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      notification.style.opacity = '0';
+      notification.style.transform = 'translateY(-20px)';
+      setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
   };
 
   const handleNewPaste = () => {
@@ -177,8 +218,9 @@ const HomePage: React.FC = () => {
             <button
               onClick={handleShare}
               disabled={isLoading}
-              className="share-button"
+              className={`share-button ${isLoading ? 'loading' : ''}`}
             >
+              {isLoading && <div className="spinner"></div>}
               {isLoading ? 'Sharing...' : 'Share All Tabs'}
             </button>
           </div>
@@ -216,7 +258,7 @@ const HomePage: React.FC = () => {
             <div className="editor-container">
               <Editor
                 key={activeTabId} // Force re-render when tab changes
-                height="calc(100vh - 240px)"
+                height="calc(100vh - 280px)"
                 language={activeTab?.language || 'javascript'}
                 theme="vs-dark"
                 value={activeTab?.content || ''}
@@ -236,6 +278,16 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         </main>
+      )}
+      
+      <footer className="footer">
+        Made with ❤️ by <a href="https://asymptote-labs.com" target="_blank" rel="noopener noreferrer">Asymptote Labs</a>
+      </footer>
+      
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
       )}
     </div>
   );

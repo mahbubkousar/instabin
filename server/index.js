@@ -26,15 +26,34 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - more restrictive for paste creation
+const createLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 20, // limit each IP to 20 paste creations per 15 minutes
+  message: { error: 'Too many pastes created, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use('/api', limiter);
+
+const readLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 paste reads per 15 minutes
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Input validation helper
+const validateInput = (input, maxLength = 1000) => {
+  if (typeof input !== 'string') return false;
+  if (input.length > maxLength) return false;
+  // Basic XSS prevention - remove potential script tags
+  const cleaned = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  return cleaned;
+};
 
 // API Routes
-app.post('/api/paste', async (req, res) => {
+app.post('/api/paste', createLimiter, async (req, res) => {
   try {
     if (!pasteService) {
       return res.status(503).json({ error: 'Service unavailable' });
@@ -42,11 +61,56 @@ app.post('/api/paste', async (req, res) => {
 
     const requestData = req.body;
     
+    // Validate and sanitize title
+    if (requestData.title) {
+      const sanitizedTitle = validateInput(requestData.title, 200);
+      if (!sanitizedTitle) {
+        return res.status(400).json({ error: 'Invalid title' });
+      }
+      requestData.title = sanitizedTitle;
+    }
+    
     // Validate content - either single content or tabs with content
     if (requestData.tabs) {
       // Multi-tab validation
       if (!Array.isArray(requestData.tabs) || requestData.tabs.length === 0) {
         return res.status(400).json({ error: 'Invalid tabs data' });
+      }
+      
+      if (requestData.tabs.length > 20) { // Limit number of tabs
+        return res.status(400).json({ error: 'Too many tabs (maximum 20)' });
+      }
+      
+      // Validate and sanitize each tab
+      for (let i = 0; i < requestData.tabs.length; i++) {
+        const tab = requestData.tabs[i];
+        
+        // Validate tab title
+        if (tab.title) {
+          const sanitizedTitle = validateInput(tab.title, 100);
+          if (!sanitizedTitle) {
+            return res.status(400).json({ error: `Invalid title for tab ${i + 1}` });
+          }
+          tab.title = sanitizedTitle;
+        }
+        
+        // Validate language
+        const allowedLanguages = [
+          'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp',
+          'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'html', 'css',
+          'scss', 'less', 'json', 'xml', 'yaml', 'sql', 'text'
+        ];
+        if (!allowedLanguages.includes(tab.language)) {
+          tab.language = 'text'; // Default to text for unknown languages
+        }
+        
+        // Validate content length
+        if (!tab.content || typeof tab.content !== 'string') {
+          tab.content = '';
+        }
+        if (tab.content.length > 2000000) { // 2MB per tab
+          return res.status(400).json({ error: `Content too large for tab ${i + 1}` });
+        }
       }
       
       const hasContent = requestData.tabs.some(tab => tab.content && tab.content.trim());
@@ -56,7 +120,7 @@ app.post('/api/paste', async (req, res) => {
       
       // Check size limit for all tabs combined
       const totalSize = requestData.tabs.reduce((size, tab) => size + (tab.content || '').length, 0);
-      if (totalSize > 5000000) { // 5MB limit for multi-tab
+      if (totalSize > 5000000) { // 5MB total limit
         return res.status(400).json({ error: 'Total content size exceeds limit' });
       }
     } else if (requestData.content) {
@@ -64,6 +128,16 @@ app.post('/api/paste', async (req, res) => {
       const content = requestData.content;
       if (!content || content.length > 1000000) { // 1MB limit
         return res.status(400).json({ error: 'Invalid content' });
+      }
+      
+      // Validate language
+      const allowedLanguages = [
+        'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp',
+        'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'html', 'css',
+        'scss', 'less', 'json', 'xml', 'yaml', 'sql', 'text'
+      ];
+      if (!allowedLanguages.includes(requestData.language)) {
+        requestData.language = 'text';
       }
     } else {
       // Neither tabs nor content provided
@@ -78,15 +152,20 @@ app.post('/api/paste', async (req, res) => {
   }
 });
 
-app.get('/api/paste', async (req, res) => {
+app.get('/api/paste', readLimiter, async (req, res) => {
   try {
     if (!pasteService) {
       return res.status(503).json({ error: 'Service unavailable' });
     }
 
     const { id } = req.query;
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       return res.status(400).json({ error: 'ID parameter required' });
+    }
+    
+    // Validate ID format (should be alphanumeric, 10 characters from nanoid)
+    if (!/^[A-Za-z0-9_-]{10}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
     }
 
     const paste = await pasteService.getPaste(id);
