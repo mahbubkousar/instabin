@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaBin - Test Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #0f0f0f;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-size: 2rem;
+            color: #4fc3f7;
+            margin-bottom: 0.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #333;
+            background-color: #1e1e1e;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 300px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+        button {
+            background-color: #4fc3f7;
+            color: #000;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button:hover {
+            background-color: #29b6f6;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+        .url-display {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .url-input {
+            flex: 1;
+            font-family: monospace;
+        }
+        .copy-btn {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+        }
+        .copy-btn:hover {
+            background-color: #444;
+        }
+        .view-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            background-color: #1e1e1e;
+            border-radius: 6px;
+            border: 1px solid #333;
+        }
+        .paste-content {
+            background-color: #0f0f0f;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #333;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">InstaBin</h1>
+            <p>Simple code sharing - Test Client</p>
+        </div>
+
+        <div class="form-group">
+            <label for="title">Title (optional)</label>
+            <input type="text" id="title" placeholder="Enter paste title">
+        </div>
+
+        <div class="form-group">
+            <label for="language">Language</label>
+            <select id="language">
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="text">Text</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="code">Code</label>
+            <textarea id="code" placeholder="Paste your code here..."></textarea>
+        </div>
+
+        <button onclick="createPaste()" id="shareBtn">Share Code</button>
+
+        <div id="result" class="result" style="display: none;">
+            <h3>Code shared successfully!</h3>
+            <div class="url-display">
+                <input type="text" id="shareUrl" class="url-input" readonly>
+                <button onclick="copyUrl()" class="copy-btn">Copy</button>
+                <button onclick="viewPaste()">View</button>
+            </div>
+        </div>
+
+        <div class="view-section">
+            <h3>Test Paste Viewer</h3>
+            <div class="form-group">
+                <label for="pasteId">Paste ID</label>
+                <input type="text" id="pasteId" placeholder="Enter paste ID to view">
+                <button onclick="loadPaste()" style="margin-top: 0.5rem;">Load Paste</button>
+            </div>
+            <div id="pasteDisplay" style="display: none;">
+                <h4 id="pasteTitle"></h4>
+                <p><strong>Language:</strong> <span id="pasteLanguage"></span> | <strong>Views:</strong> <span id="pasteViews"></span></p>
+                <div id="pasteContent" class="paste-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function createPaste() {
+            const title = document.getElementById('title').value;
+            const language = document.getElementById('language').value;
+            const code = document.getElementById('code').value;
+            const btn = document.getElementById('shareBtn');
+
+            if (!code.trim()) {
+                alert('Please enter some code to share');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sharing...';
+
+            try {
+                const response = await fetch('/api/paste', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        content: code,
+                        language,
+                        title: title || 'Untitled'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const shareUrl = `${window.location.origin}/${data.id}`;
+                    document.getElementById('shareUrl').value = shareUrl;
+                    document.getElementById('result').style.display = 'block';
+                    
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(shareUrl);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Failed to create paste');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Share Code';
+            }
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('shareUrl').value;
+            navigator.clipboard.writeText(url);
+            alert('URL copied to clipboard!');
+        }
+
+        function viewPaste() {
+            const url = document.getElementById('shareUrl').value;
+            window.open(url, '_blank');
+        }
+
+        async function loadPaste() {
+            const pasteId = document.getElementById('pasteId').value;
+            
+            if (!pasteId.trim()) {
+                alert('Please enter a paste ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/paste?id=${pasteId}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pasteTitle').textContent = data.title;
+                    document.getElementById('pasteLanguage').textContent = data.language;
+                    document.getElementById('pasteViews').textContent = data.views;
+                    document.getElementById('pasteContent').textContent = data.content;
+                    document.getElementById('pasteDisplay').style.display = 'block';
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Failed to load paste');
+            }
+        }
+
+        // Auto-fill paste ID from URL if present
+        window.addEventListener('load', () => {
+            const pathParts = window.location.pathname.split('/');
+            if (pathParts.length > 1 && pathParts[1]) {
+                document.getElementById('pasteId').value = pathParts[1];
+                loadPaste();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "instabin-api",
+  "version": "1.0.0",
+  "description": "InstaBin serverless API functions",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "nanoid": "^3.3.7"
+  }
+}

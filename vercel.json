@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/paste",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "dest": "/api/paste.js"
+    },
+    {
+      "src": "/api/health",
+      "methods": ["GET", "OPTIONS"],
+      "dest": "/api/health.js"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/client/build/static/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg))",
+      "dest": "/client/build/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/client/build/index.html"
+    }
+  ],
+  "env": {
+    "FIREBASE_PROJECT_ID": "@firebase_project_id",
+    "FIREBASE_SERVICE_ACCOUNT": "@firebase_service_account"
+  },
+  "build": {
+    "env": {
+      "REACT_APP_API_BASE": "https://your-deployment.vercel.app"
+    }
+  },
+  "outputDirectory": "client/build"
+}

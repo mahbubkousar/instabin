@@ -1,0 +1,9 @@
+{
+  "name": "instabin-netlify-functions",
+  "version": "1.0.0",
+  "description": "InstaBin Netlify functions",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "nanoid": "^3.3.7"
+  }
+}
