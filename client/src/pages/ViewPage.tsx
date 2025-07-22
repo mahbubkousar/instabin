@@ -220,7 +220,7 @@ const ViewPage: React.FC = () => {
 			</main>
 
 			<footer className="footer">
-				@copy;{" "}
+				&copy;{" "}
 				<a
 					href="https:asymptotelabs.github.io"
 					target="_blank"
