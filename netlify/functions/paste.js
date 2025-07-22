@@ -59,27 +59,77 @@ exports.handler = async (event, context) => {
 
     if (method === 'POST') {
       // Create new paste
-      const { content, language = 'text', title = 'Untitled' } = JSON.parse(body);
+      const requestData = JSON.parse(body);
       
-      if (!content || content.length > 1000000) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Invalid content' })
-        };
+      // Validate content - either single content or tabs with content
+      if (requestData.tabs) {
+        // Multi-tab validation
+        if (!Array.isArray(requestData.tabs) || requestData.tabs.length === 0) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Invalid tabs data' })
+          };
+        }
+        
+        const hasContent = requestData.tabs.some(tab => tab.content && tab.content.trim());
+        if (!hasContent) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'At least one tab must have content' })
+          };
+        }
+        
+        // Check size limit for all tabs combined
+        const totalSize = requestData.tabs.reduce((size, tab) => size + (tab.content || '').length, 0);
+        if (totalSize > 5000000) { // 5MB limit for multi-tab
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Total content size exceeds limit' })
+          };
+        }
+      } else {
+        // Single tab validation (legacy)
+        const content = requestData.content;
+        if (!content || content.length > 1000000) { // 1MB limit
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ error: 'Invalid content' })
+          };
+        }
       }
 
       const id = nanoid(10);
-      const paste = {
-        id,
-        content,
-        language,
-        title,
-        createdAt: new Date(),
-        views: 0
-      };
+      
+      // Handle both single tab and multi-tab formats
+      let pasteData;
+      if (requestData.tabs && Array.isArray(requestData.tabs)) {
+        // Multi-tab format
+        pasteData = {
+          id,
+          title: requestData.title || 'Multi-tab paste',
+          tabs: requestData.tabs,
+          type: 'multi-tab',
+          createdAt: new Date(),
+          views: 0
+        };
+      } else {
+        // Legacy single tab format
+        pasteData = {
+          id,
+          content: requestData.content,
+          language: requestData.language || 'text',
+          title: requestData.title || 'Untitled',
+          type: 'single',
+          createdAt: new Date(),
+          views: 0
+        };
+      }
 
-      await collection.doc(id).set(paste);
+      await collection.doc(id).set(pasteData);
       
       return {
         statusCode: 201,

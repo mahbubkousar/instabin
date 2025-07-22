@@ -4,18 +4,29 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import './ViewPage.css';
 
-interface Paste {
-  id: string;
+interface CodeTab {
+  title: string;
   content: string;
   language: string;
+}
+
+interface Paste {
+  id: string;
   title: string;
   createdAt: string;
   views: number;
+  type?: 'single' | 'multi-tab';
+  // Legacy single tab format
+  content?: string;
+  language?: string;
+  // New multi-tab format
+  tabs?: CodeTab[];
 }
 
 const ViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [paste, setPaste] = useState<Paste | null>(null);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -38,8 +49,28 @@ const ViewPage: React.FC = () => {
   }, [id]);
 
   const handleCopyCode = () => {
-    if (paste?.content) {
-      navigator.clipboard.writeText(paste.content);
+    let textToCopy = '';
+    
+    if (paste?.type === 'multi-tab' && paste.tabs) {
+      // Copy all tabs with separators
+      textToCopy = paste.tabs.map(tab => 
+        `// === ${tab.title} (${tab.language}) ===\n${tab.content}`
+      ).join('\n\n');
+    } else if (paste?.content) {
+      // Legacy single tab
+      textToCopy = paste.content;
+    }
+    
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyCurrentTab = () => {
+    if (paste?.type === 'multi-tab' && paste.tabs?.[activeTabIndex]) {
+      navigator.clipboard.writeText(paste.tabs[activeTabIndex].content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -83,16 +114,30 @@ const ViewPage: React.FC = () => {
           <div className="paste-info">
             <h2 className="paste-title">{paste.title}</h2>
             <div className="paste-meta">
-              <span className="language">{paste.language}</span>
-              <span className="views">{paste.views} views</span>
+              {paste.type === 'multi-tab' && paste.tabs ? (
+                <>
+                  <span className="tab-count">{paste.tabs.length} tabs</span>
+                  <span className="views">{paste.views} views</span>
+                </>
+              ) : (
+                <>
+                  <span className="language">{paste.language}</span>
+                  <span className="views">{paste.views} views</span>
+                </>
+              )}
               <span className="date">
                 {new Date(paste.createdAt).toLocaleDateString()}
               </span>
             </div>
           </div>
           <div className="actions">
+            {paste.type === 'multi-tab' && paste.tabs && (
+              <button onClick={handleCopyCurrentTab} className="action-btn">
+                {copied ? 'Copied!' : 'Copy Tab'}
+              </button>
+            )}
             <button onClick={handleCopyCode} className="action-btn">
-              {copied ? 'Copied!' : 'Copy Code'}
+              {copied ? 'Copied!' : paste.type === 'multi-tab' ? 'Copy All' : 'Copy Code'}
             </button>
             <button onClick={handleCopyUrl} className="action-btn">
               Copy URL
@@ -105,28 +150,67 @@ const ViewPage: React.FC = () => {
       </header>
 
       <main className="main-content">
-        <div className="editor-container">
-          <Editor
-            height="calc(100vh - 80px)"
-            language={paste.language}
-            theme="vs-dark"
-            value={paste.content}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: 14,
-              wordWrap: 'on',
-              automaticLayout: true,
-              scrollBeyondLastLine: false,
-              renderLineHighlight: 'none',
-              overviewRulerBorder: false,
-              hideCursorInOverviewRuler: true,
-              overviewRulerLanes: 0,
-              contextmenu: false,
-              selectOnLineNumbers: true
-            }}
-          />
-        </div>
+        {paste.type === 'multi-tab' && paste.tabs ? (
+          <div className="tabs-container">
+            <div className="tabs-header">
+              {paste.tabs.map((tab, index) => (
+                <div 
+                  key={index}
+                  className={`tab ${activeTabIndex === index ? 'active' : ''}`}
+                  onClick={() => setActiveTabIndex(index)}
+                >
+                  <span className="tab-title">{tab.title}</span>
+                  <span className="tab-language">({tab.language})</span>
+                </div>
+              ))}
+            </div>
+            <div className="editor-container">
+              <Editor
+                height="calc(100vh - 120px)"
+                language={paste.tabs[activeTabIndex]?.language || 'text'}
+                theme="vs-dark"
+                value={paste.tabs[activeTabIndex]?.content || ''}
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                  renderLineHighlight: 'none',
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerLanes: 0,
+                  contextmenu: false,
+                  selectOnLineNumbers: true
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="editor-container">
+            <Editor
+              height="calc(100vh - 80px)"
+              language={paste.language}
+              theme="vs-dark"
+              value={paste.content}
+              options={{
+                readOnly: true,
+                minimap: { enabled: false },
+                fontSize: 14,
+                wordWrap: 'on',
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+                renderLineHighlight: 'none',
+                overviewRulerBorder: false,
+                hideCursorInOverviewRuler: true,
+                overviewRulerLanes: 0,
+                contextmenu: false,
+                selectOnLineNumbers: true
+              }}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

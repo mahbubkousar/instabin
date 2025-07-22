@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>InstaBin API Debug</title>
+</head>
+<body>
+    <h1>InstaBin API Debug</h1>
+    
+    <div>
+        <h2>Test Custom ID Creation</h2>
+        <input type="text" id="customId" placeholder="Custom ID" value="test-custom-123">
+        <textarea id="content" placeholder="Code content">console.log("Testing custom ID");</textarea>
+        <button onclick="createPaste()">Create Paste</button>
+        <div id="result"></div>
+    </div>
+
+    <div>
+        <h2>Test ID Availability Check</h2>
+        <input type="text" id="checkId" placeholder="ID to check" value="test-custom-123">
+        <button onclick="checkAvailability()">Check Availability</button>
+        <div id="checkResult"></div>
+    </div>
+
+    <script>
+        async function createPaste() {
+            const customId = document.getElementById('customId').value;
+            const content = document.getElementById('content').value;
+            
+            const payload = {
+                content: content,
+                language: 'javascript',
+                title: 'Debug Test',
+                customId: customId || undefined
+            };
+            
+            console.log('Sending payload:', payload);
+            
+            try {
+                const response = await fetch('/api/paste', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                console.log('Response:', response.status, data);
+                
+                document.getElementById('result').innerHTML = `
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong> ${JSON.stringify(data, null, 2)}</p>
+                    <p><strong>URL:</strong> ${window.location.origin}/${data.id}</p>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function checkAvailability() {
+            const id = document.getElementById('checkId').value;
+            
+            try {
+                const response = await fetch(`/api/paste?id=${id}`);
+                const data = await response.json();
+                
+                console.log('Check response:', response.status, data);
+                
+                document.getElementById('checkResult').innerHTML = `
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong> ${JSON.stringify(data, null, 2)}</p>
+                    <p><strong>Available:</strong> ${response.status === 404 ? 'YES' : 'NO'}</p>
+                `;
+            } catch (error) {
+                console.error('Check error:', error);
+                document.getElementById('checkResult').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

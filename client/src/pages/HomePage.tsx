@@ -3,25 +3,76 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import './HomePage.css';
 
+interface CodeTab {
+  id: string;
+  title: string;
+  content: string;
+  language: string;
+}
+
 const HomePage: React.FC = () => {
-  const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('javascript');
-  const [title, setTitle] = useState('');
+  const [tabs, setTabs] = useState<CodeTab[]>([
+    {
+      id: '1',
+      title: 'Untitled',
+      content: '',
+      language: 'javascript'
+    }
+  ]);
+  const [activeTabId, setActiveTabId] = useState('1');
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
 
+  // Get active tab
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+
+  // Tab management functions
+  const addTab = () => {
+    const newId = Date.now().toString();
+    const newTab: CodeTab = {
+      id: newId,
+      title: 'Untitled',
+      content: '',
+      language: 'javascript'
+    };
+    setTabs([...tabs, newTab]);
+    setActiveTabId(newId);
+  };
+
+  const removeTab = (tabId: string) => {
+    if (tabs.length === 1) return; // Don't remove last tab
+    
+    const newTabs = tabs.filter(tab => tab.id !== tabId);
+    setTabs(newTabs);
+    
+    if (activeTabId === tabId) {
+      setActiveTabId(newTabs[0].id);
+    }
+  };
+
+  const updateTab = (tabId: string, updates: Partial<CodeTab>) => {
+    setTabs(tabs.map(tab => 
+      tab.id === tabId ? { ...tab, ...updates } : tab
+    ));
+  };
+
   const handleShare = async () => {
-    if (!code.trim()) {
-      alert('Please enter some code to share');
+    // Check if any tab has content
+    const hasContent = tabs.some(tab => tab.content.trim());
+    if (!hasContent) {
+      alert('Please enter some code in at least one tab to share');
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await axios.post('/api/paste', {
-        content: code,
-        language,
-        title: title || 'Untitled'
+        tabs: tabs.map(tab => ({
+          title: tab.title || 'Untitled',
+          content: tab.content,
+          language: tab.language
+        })),
+        title: 'Multi-tab paste'
       });
 
       // Generate the correct URL for development/production
@@ -42,8 +93,13 @@ const HomePage: React.FC = () => {
   };
 
   const handleNewPaste = () => {
-    setCode('');
-    setTitle('');
+    setTabs([{
+      id: '1',
+      title: 'Untitled',
+      content: '',
+      language: 'javascript'
+    }]);
+    setActiveTabId('1');
     setShareUrl('');
   };
 
@@ -101,14 +157,14 @@ const HomePage: React.FC = () => {
             <div className="control-group">
               <input
                 type="text"
-                placeholder="Paste title (optional)"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Tab title (optional)"
+                value={activeTab?.title || ''}
+                onChange={(e) => updateTab(activeTabId, { title: e.target.value })}
                 className="title-input"
               />
               <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                value={activeTab?.language || 'javascript'}
+                onChange={(e) => updateTab(activeTabId, { language: e.target.value })}
                 className="language-select"
               >
                 {languages.map(lang => (
@@ -123,29 +179,61 @@ const HomePage: React.FC = () => {
               disabled={isLoading}
               className="share-button"
             >
-              {isLoading ? 'Sharing...' : 'Share Code'}
+              {isLoading ? 'Sharing...' : 'Share All Tabs'}
             </button>
           </div>
 
-          <div className="editor-container">
-            <Editor
-              height="calc(100vh - 200px)"
-              language={language}
-              theme="vs-dark"
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                wordWrap: 'on',
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-                renderLineHighlight: 'none',
-                overviewRulerBorder: false,
-                hideCursorInOverviewRuler: true,
-                overviewRulerLanes: 0
-              }}
-            />
+          <div className="tabs-container">
+            <div className="tabs-header">
+              {tabs.map(tab => (
+                <div
+                  key={tab.id}
+                  className={`tab ${activeTabId === tab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTabId(tab.id)}
+                >
+                  <span className="tab-title">
+                    {tab.title || 'Untitled'} 
+                    <span className="tab-language">({tab.language})</span>
+                  </span>
+                  {tabs.length > 1 && (
+                    <button
+                      className="tab-close"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeTab(tab.id);
+                      }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button className="add-tab" onClick={addTab}>
+                +
+              </button>
+            </div>
+
+            <div className="editor-container">
+              <Editor
+                key={activeTabId} // Force re-render when tab changes
+                height="calc(100vh - 240px)"
+                language={activeTab?.language || 'javascript'}
+                theme="vs-dark"
+                value={activeTab?.content || ''}
+                onChange={(value) => updateTab(activeTabId, { content: value || '' })}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                  renderLineHighlight: 'none',
+                  overviewRulerBorder: false,
+                  hideCursorInOverviewRuler: true,
+                  overviewRulerLanes: 0
+                }}
+              />
+            </div>
           </div>
         </main>
       )}

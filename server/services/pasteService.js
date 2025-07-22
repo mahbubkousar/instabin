@@ -7,19 +7,36 @@ class PasteService {
     this.collection = this.db.collection('pastes');
   }
 
-  async createPaste(content, language = 'text', title = 'Untitled') {
+  async createPaste(data) {
     try {
       const id = nanoid(10);
-      const paste = {
-        id,
-        content,
-        language,
-        title,
-        createdAt: new Date(),
-        views: 0
-      };
+      
+      // Handle both single tab and multi-tab formats
+      let pasteData;
+      if (data.tabs && Array.isArray(data.tabs)) {
+        // Multi-tab format
+        pasteData = {
+          id,
+          title: data.title || 'Multi-tab paste',
+          tabs: data.tabs,
+          type: 'multi-tab',
+          createdAt: new Date(),
+          views: 0
+        };
+      } else {
+        // Legacy single tab format
+        pasteData = {
+          id,
+          content: data.content || data,
+          language: data.language || 'text',
+          title: data.title || 'Untitled',
+          type: 'single',
+          createdAt: new Date(),
+          views: 0
+        };
+      }
 
-      await this.collection.doc(id).set(paste);
+      await this.collection.doc(id).set(pasteData);
       return { id };
     } catch (error) {
       throw new Error('Failed to create paste: ' + error.message);

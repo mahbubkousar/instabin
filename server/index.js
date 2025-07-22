@@ -40,13 +40,37 @@ app.post('/api/paste', async (req, res) => {
       return res.status(503).json({ error: 'Service unavailable' });
     }
 
-    const { content, language = 'text', title = 'Untitled' } = req.body;
+    const requestData = req.body;
     
-    if (!content || content.length > 1000000) { // 1MB limit
-      return res.status(400).json({ error: 'Invalid content' });
+    // Validate content - either single content or tabs with content
+    if (requestData.tabs) {
+      // Multi-tab validation
+      if (!Array.isArray(requestData.tabs) || requestData.tabs.length === 0) {
+        return res.status(400).json({ error: 'Invalid tabs data' });
+      }
+      
+      const hasContent = requestData.tabs.some(tab => tab.content && tab.content.trim());
+      if (!hasContent) {
+        return res.status(400).json({ error: 'At least one tab must have content' });
+      }
+      
+      // Check size limit for all tabs combined
+      const totalSize = requestData.tabs.reduce((size, tab) => size + (tab.content || '').length, 0);
+      if (totalSize > 5000000) { // 5MB limit for multi-tab
+        return res.status(400).json({ error: 'Total content size exceeds limit' });
+      }
+    } else if (requestData.content) {
+      // Single tab validation (legacy)
+      const content = requestData.content;
+      if (!content || content.length > 1000000) { // 1MB limit
+        return res.status(400).json({ error: 'Invalid content' });
+      }
+    } else {
+      // Neither tabs nor content provided
+      return res.status(400).json({ error: 'Either tabs or content must be provided' });
     }
 
-    const result = await pasteService.createPaste(content, language, title);
+    const result = await pasteService.createPaste(requestData);
     res.json(result);
   } catch (error) {
     console.error('Create paste error:', error);
@@ -54,13 +78,17 @@ app.post('/api/paste', async (req, res) => {
   }
 });
 
-app.get('/api/paste/:id', async (req, res) => {
+app.get('/api/paste', async (req, res) => {
   try {
     if (!pasteService) {
       return res.status(503).json({ error: 'Service unavailable' });
     }
 
-    const { id } = req.params;
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ error: 'ID parameter required' });
+    }
+
     const paste = await pasteService.getPaste(id);
     
     if (!paste) {
