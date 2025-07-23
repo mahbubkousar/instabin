@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import ViewPage from './pages/ViewPage';
 import MyPastesPage from './pages/MyPastesPage';
+import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import './App.css';
 
 function App() {
@@ -17,6 +18,11 @@ function App() {
             <Route path="/my-pastes" element={
               <ProtectedRoute>
                 <MyPastesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile-settings" element={
+              <ProtectedRoute>
+                <ProfileSettingsPage />
               </ProtectedRoute>
             } />
             <Route path="/:id" element={<ViewPage />} />

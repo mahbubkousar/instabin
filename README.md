@@ -11,6 +11,7 @@ Simple code sharing platform - paste code, get instant shareable links.
 - **Multi-tab support** - create and organize multiple code snippets in one paste
 - **User authentication** - sign up with email/password or Google OAuth
 - **Personal dashboard** - manage and organize your code pastes
+- **Profile management** - update display name, change password, and manage account
 - **Anonymous pasting** - no signup required for guest users
 - **Instant shareable links** with unique IDs
 - **Syntax highlighting** for 19+ languages (Monaco Editor)
