@@ -53,14 +53,20 @@ const MyPastesPage: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch pastes');
+        const errorText = await response.text();
+        console.error('API Error Response:', response.status, errorText);
+        throw new Error(`Failed to fetch pastes: ${response.status}`);
       }
 
       const data = await response.json();
       setPastes(data.pastes);
     } catch (error) {
       console.error('Error fetching pastes:', error);
-      setError('Failed to load pastes');
+      if (error instanceof SyntaxError) {
+        setError('Server connection issue. Please make sure the server is running.');
+      } else {
+        setError('Failed to load pastes');
+      }
     } finally {
       setLoading(false);
     }
