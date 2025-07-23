@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import UserMenu from '../components/UserMenu';
 import AuthModal from '../components/AuthModal';
+import { apiUrls, makeAuthenticatedRequest } from '../utils/api';
 import './MyPastesPage.css';
 
 interface Paste {
@@ -44,13 +45,12 @@ const MyPastesPage: React.FC = () => {
 
     try {
       setLoading(true);
-      const token = await currentUser.getIdToken();
       
-      const response = await fetch('/api/user/pastes', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await makeAuthenticatedRequest(
+        apiUrls.userPastes,
+        { method: 'GET' },
+        currentUser
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -80,14 +80,11 @@ const MyPastesPage: React.FC = () => {
     }
 
     try {
-      const token = await currentUser.getIdToken();
-      
-      const response = await fetch(`/api/user/paste/${pasteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await makeAuthenticatedRequest(
+        `${apiUrls.userPastes}?id=${pasteId}`,
+        { method: 'DELETE' },
+        currentUser
+      );
 
       if (!response.ok) {
         throw new Error('Failed to delete paste');
@@ -106,18 +103,16 @@ const MyPastesPage: React.FC = () => {
     if (!currentUser) return;
 
     try {
-      const token = await currentUser.getIdToken();
-      
-      const response = await fetch(`/api/user/paste/${pasteId}/visibility`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await makeAuthenticatedRequest(
+        `${apiUrls.userPastes}?id=${pasteId}`,
+        { 
+          method: 'PATCH',
+          body: JSON.stringify({
+            isPublic: !currentVisibility
+          })
         },
-        body: JSON.stringify({
-          isPublic: !currentVisibility
-        })
-      });
+        currentUser
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update paste visibility');

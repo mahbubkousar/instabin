@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import axios from "axios";
+import { apiUrls } from "../utils/api";
 import "./ViewPage.css";
 
 interface CodeTab {
@@ -36,8 +36,14 @@ const ViewPage: React.FC = () => {
 			if (!id) return;
 
 			try {
-				const response = await axios.get(`/api/paste?id=${id}`);
-				setPaste(response.data);
+				const response = await fetch(`${apiUrls.paste}?id=${id}`);
+				
+				if (!response.ok) {
+					throw new Error('Paste not found');
+				}
+				
+				const data = await response.json();
+				setPaste(data);
 			} catch (err) {
 				setError("Paste not found");
 			} finally {

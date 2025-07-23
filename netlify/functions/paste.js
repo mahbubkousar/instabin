@@ -49,7 +49,7 @@ exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json'
   };
 
@@ -62,6 +62,22 @@ exports.handler = async (event, context) => {
     };
   }
   
+  // Authentication helper
+  const authenticateUser = async (authHeader) => {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    try {
+      const token = authHeader.substring(7);
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      return decodedToken;
+    } catch (error) {
+      console.error('Authentication error:', error);
+      return null;
+    }
+  };
+
   try {
     const database = getDb();
     const collection = database.collection('pastes');
@@ -69,6 +85,12 @@ exports.handler = async (event, context) => {
     if (method === 'POST') {
       // Create new paste
       const requestData = JSON.parse(body);
+      
+      // Check for authentication
+      const user = await authenticateUser(event.headers.authorization);
+      if (user) {
+        requestData.userId = user.uid;
+      }
       
       // Validate content - either single content or tabs with content
       if (requestData.tabs) {
@@ -123,7 +145,9 @@ exports.handler = async (event, context) => {
           tabs: requestData.tabs,
           type: 'multi-tab',
           createdAt: new Date(),
-          views: 0
+          views: 0,
+          userId: requestData.userId || null,
+          isPublic: true
         };
       } else {
         // Legacy single tab format
@@ -134,7 +158,9 @@ exports.handler = async (event, context) => {
           title: requestData.title || 'Untitled',
           type: 'single',
           createdAt: new Date(),
-          views: 0
+          views: 0,
+          userId: requestData.userId || null,
+          isPublic: true
         };
       }
 

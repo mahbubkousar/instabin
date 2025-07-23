@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import Editor from "@monaco-editor/react";
-import axios from "axios";
 import { useAuth } from "../contexts/AuthContext";
 import AuthModal from "../components/AuthModal";
 import UserMenu from "../components/UserMenu";
+import { apiUrls, makeAuthenticatedRequest } from "../utils/api";
 import "./HomePage.css";
 
 interface CodeTab {
@@ -75,31 +75,34 @@ const HomePage: React.FC = () => {
 
 		setIsLoading(true);
 		try {
-			const headers: any = {
-				'Content-Type': 'application/json'
-			};
+			const response = await makeAuthenticatedRequest(
+				apiUrls.paste,
+				{
+					method: 'POST',
+					body: JSON.stringify({
+						tabs: tabs.map((tab) => ({
+							title: tab.title || "Untitled",
+							content: tab.content,
+							language: tab.language,
+						})),
+						title: "Multi-tab paste",
+					})
+				},
+				currentUser
+			);
 
-			// Add authentication token if user is signed in
-			if (currentUser) {
-				const token = await currentUser.getIdToken();
-				headers.Authorization = `Bearer ${token}`;
+			if (!response.ok) {
+				throw new Error('Failed to create paste');
 			}
 
-			const response = await axios.post("/api/paste", {
-				tabs: tabs.map((tab) => ({
-					title: tab.title || "Untitled",
-					content: tab.content,
-					language: tab.language,
-				})),
-				title: "Multi-tab paste",
-			}, { headers });
+			const data = await response.json();
 
 			// Generate the correct URL for development/production
 			const baseUrl =
 				process.env.NODE_ENV === "production"
 					? window.location.origin
 					: "http://localhost:3000";
-			const shareUrl = `${baseUrl}/${response.data.id}`;
+			const shareUrl = `${baseUrl}/${data.id}`;
 
 			setShareUrl(shareUrl);
 
