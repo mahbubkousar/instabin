@@ -35,19 +35,35 @@ const UserMenu: React.FC<UserMenuProps> = ({ onOpenAuth }) => {
 
   if (!currentUser) {
     return (
-      <div className="user-menu-guest">
+      <div className="user-menu" ref={menuRef}>
         <button
-          onClick={() => onOpenAuth('login')}
-          className="auth-btn login-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          className="account-icon"
         >
-          Sign In
+          👤
         </button>
-        <button
-          onClick={() => onOpenAuth('signup')}
-          className="auth-btn signup-btn"
-        >
-          Sign Up
-        </button>
+        {isOpen && (
+          <div className="user-menu-dropdown">
+            <button 
+              className="menu-item"
+              onClick={() => {
+                onOpenAuth('login');
+                setIsOpen(false);
+              }}
+            >
+              Sign In
+            </button>
+            <button 
+              className="menu-item"
+              onClick={() => {
+                onOpenAuth('signup');
+                setIsOpen(false);
+              }}
+            >
+              Sign Up
+            </button>
+          </div>
+        )}
       </div>
     );
   }

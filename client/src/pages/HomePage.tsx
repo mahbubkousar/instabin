@@ -367,43 +367,23 @@ const HomePage: React.FC = () => {
 
 						<div className="editor-container">
 							<Editor
-								key={activeTabId} // Force re-render when tab changes
-								height="100%"
-								width="100%"
+								key={`editor-${activeTabId}`}
+								height="400px"
 								language={activeTab?.language || "javascript"}
 								theme="vs-dark"
 								value={activeTab?.content || ""}
-								onChange={(value) =>
-									updateTab(activeTabId, { content: value || "" })
-								}
+								onChange={(value) => {
+									if (value !== undefined) {
+										updateTab(activeTabId, { content: value });
+									}
+								}}
 								options={{
 									minimap: { enabled: false },
 									fontSize: 14,
 									wordWrap: "on",
 									automaticLayout: true,
 									scrollBeyondLastLine: false,
-									renderLineHighlight: "none",
-									overviewRulerBorder: false,
-									hideCursorInOverviewRuler: true,
-									overviewRulerLanes: 0,
-									lineNumbers: "on",
-									folding: true,
-									glyphMargin: true,
-									lineDecorationsWidth: 10,
-									lineNumbersMinChars: 3,
-									padding: { top: 10, bottom: 10 },
-									scrollbar: {
-										vertical: 'auto',
-										horizontal: 'auto',
-										verticalScrollbarSize: 14,
-										horizontalScrollbarSize: 14
-									},
-									readOnly: false,
-									domReadOnly: false,
-									selectOnLineNumbers: true,
-									roundedSelection: false,
-									cursorStyle: 'line',
-									mouseWheelZoom: false
+									lineNumbers: "on"
 								}}
 							/>
 						</div>
