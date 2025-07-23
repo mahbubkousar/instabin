@@ -292,7 +292,24 @@
   color: #29b6f6;
 }
 
+/* Mobile/Desktop visibility controls */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: flex;
+}
+
 @media (max-width: 480px) {
+  .mobile-only {
+    display: flex;
+  }
+  
+  .desktop-only {
+    display: none;
+  }
+  
   .header {
     padding: 0.75rem 1rem;
   }
@@ -300,49 +317,50 @@
   .header-content {
     display: grid;
     grid-template-areas: 
-      "logo actions"
-      "info info";
+      "logo-area actions"
+      "title title";
     grid-template-columns: 1fr auto;
-    align-items: center;
+    align-items: start;
     gap: 0.75rem;
   }
   
+  .logo-area {
+    grid-area: logo-area;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
   .logo {
-    grid-area: logo;
     font-size: 1.25rem;
+    text-align: left;
+  }
+  
+  .logo-meta {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 0.25rem;
   }
   
   .paste-info {
-    grid-area: info;
-    text-align: left;
+    grid-area: title;
+    text-align: center;
     margin-top: 0.5rem;
   }
   
   .paste-title {
     font-size: 1rem;
-    margin-bottom: 0.25rem;
-  }
-  
-  .paste-meta {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    font-size: 0.75rem;
-  }
-  
-  .paste-meta > *:not(.date) {
-    display: inline-block;
-  }
-  
-  .date {
-    display: none;
+    margin-bottom: 0;
   }
   
   .actions {
     grid-area: actions;
     display: flex;
     gap: 0.5rem;
-    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
   
   .action-btn {
@@ -352,22 +370,20 @@
     white-space: nowrap;
   }
   
-  .action-btn:nth-child(n+3) {
+  .action-btn:nth-child(2) {
     display: none;
   }
   
   .new-paste-btn {
-    background-color: transparent;
-    color: #4fc3f7;
+    background-color: #4fc3f7;
+    color: #000;
     border-color: #4fc3f7;
-    font-weight: 500;
-    padding: 0.4rem 0.6rem;
-    font-size: 0.7rem;
+    font-weight: 600;
   }
   
   .new-paste-btn:hover {
-    background-color: rgba(79, 195, 247, 0.1);
-    border-color: #4fc3f7;
+    background-color: #29b6f6;
+    border-color: #29b6f6;
   }
   
   .tabs-header {
