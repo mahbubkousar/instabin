@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
+import { useAuth } from "../contexts/AuthContext";
+import AuthModal from "../components/AuthModal";
+import UserMenu from "../components/UserMenu";
 import "./HomePage.css";
 
 interface CodeTab {
@@ -11,6 +14,7 @@ interface CodeTab {
 }
 
 const HomePage: React.FC = () => {
+	const { currentUser } = useAuth();
 	const [tabs, setTabs] = useState<CodeTab[]>([
 		{
 			id: "1",
@@ -22,6 +26,8 @@ const HomePage: React.FC = () => {
 	const [activeTabId, setActiveTabId] = useState("1");
 	const [isLoading, setIsLoading] = useState(false);
 	const [shareUrl, setShareUrl] = useState("");
+	const [authModalOpen, setAuthModalOpen] = useState(false);
+	const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
 	// Get active tab
 	const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -69,6 +75,16 @@ const HomePage: React.FC = () => {
 
 		setIsLoading(true);
 		try {
+			const headers: any = {
+				'Content-Type': 'application/json'
+			};
+
+			// Add authentication token if user is signed in
+			if (currentUser) {
+				const token = await currentUser.getIdToken();
+				headers.Authorization = `Bearer ${token}`;
+			}
+
 			const response = await axios.post("/api/paste", {
 				tabs: tabs.map((tab) => ({
 					title: tab.title || "Untitled",
@@ -76,7 +92,7 @@ const HomePage: React.FC = () => {
 					language: tab.language,
 				})),
 				title: "Multi-tab paste",
-			});
+			}, { headers });
 
 			// Generate the correct URL for development/production
 			const baseUrl =
@@ -194,6 +210,15 @@ const HomePage: React.FC = () => {
 		setShareUrl("");
 	};
 
+	const handleOpenAuth = (mode: 'login' | 'signup') => {
+		setAuthMode(mode);
+		setAuthModalOpen(true);
+	};
+
+	const handleSwitchAuthMode = () => {
+		setAuthMode(authMode === 'login' ? 'signup' : 'login');
+	};
+
 	const languages = [
 		"javascript",
 		"typescript",
@@ -220,8 +245,13 @@ const HomePage: React.FC = () => {
 		<div className="home-page">
 			<header className="header">
 				<div className="header-content">
-					<h1 className="logo">InstaBin</h1>
-					<p className="tagline">Share code instantly</p>
+					<div className="header-left">
+						<h1 className="logo">InstaBin</h1>
+						<p className="tagline">Share code instantly</p>
+					</div>
+					<div className="header-right">
+						<UserMenu onOpenAuth={handleOpenAuth} />
+					</div>
 				</div>
 			</header>
 
@@ -375,6 +405,13 @@ const HomePage: React.FC = () => {
 					<div className="loading-spinner"></div>
 				</div>
 			)}
+
+			<AuthModal
+				isOpen={authModalOpen}
+				onClose={() => setAuthModalOpen(false)}
+				mode={authMode}
+				onSwitchMode={handleSwitchAuthMode}
+			/>
 		</div>
 	);
 };

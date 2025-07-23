@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const PasteService = require('./services/pasteService');
-const { initializeFirebase } = require('./firebase');
+const { initializeFirebase, admin } = require('./firebase');
 require('dotenv').config();
 
 const app = express();
@@ -43,6 +43,41 @@ const readLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    }
+
+    const token = authHeader.substring(7);
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+  }
+};
+
+// Optional authentication middleware (doesn't fail if no token)
+const optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      req.user = decodedToken;
+    }
+    next();
+  } catch (error) {
+    // Log error but continue without authentication
+    console.log('Optional auth failed:', error.message);
+    next();
+  }
+};
+
 // Input validation helper
 const validateInput = (input, maxLength = 1000) => {
   if (typeof input !== 'string') return false;
@@ -53,13 +88,18 @@ const validateInput = (input, maxLength = 1000) => {
 };
 
 // API Routes
-app.post('/api/paste', createLimiter, async (req, res) => {
+app.post('/api/paste', createLimiter, optionalAuth, async (req, res) => {
   try {
     if (!pasteService) {
       return res.status(503).json({ error: 'Service unavailable' });
     }
 
     const requestData = req.body;
+    
+    // Add user ID if authenticated
+    if (req.user) {
+      requestData.userId = req.user.uid;
+    }
     
     // Validate and sanitize title
     if (requestData.title) {
@@ -178,6 +218,86 @@ app.get('/api/paste', readLimiter, async (req, res) => {
   } catch (error) {
     console.error('Get paste error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// User-specific routes
+app.get('/api/user/pastes', readLimiter, authenticateUser, async (req, res) => {
+  try {
+    if (!pasteService) {
+      return res.status(503).json({ error: 'Service unavailable' });
+    }
+
+    const userId = req.user.uid;
+    const limit = parseInt(req.query.limit) || 20;
+    const result = await pasteService.getUserPastes(userId, limit);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Get user pastes error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.delete('/api/user/paste/:id', createLimiter, authenticateUser, async (req, res) => {
+  try {
+    if (!pasteService) {
+      return res.status(503).json({ error: 'Service unavailable' });
+    }
+
+    const { id } = req.params;
+    const userId = req.user.uid;
+    
+    // Validate ID format
+    if (!/^[A-Za-z0-9_-]{10}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
+
+    const result = await pasteService.deletePaste(id, userId);
+    res.json(result);
+  } catch (error) {
+    console.error('Delete paste error:', error);
+    if (error.message.includes('Unauthorized')) {
+      res.status(403).json({ error: error.message });
+    } else if (error.message.includes('not found')) {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+});
+
+app.patch('/api/user/paste/:id/visibility', createLimiter, authenticateUser, async (req, res) => {
+  try {
+    if (!pasteService) {
+      return res.status(503).json({ error: 'Service unavailable' });
+    }
+
+    const { id } = req.params;
+    const { isPublic } = req.body;
+    const userId = req.user.uid;
+    
+    // Validate ID format
+    if (!/^[A-Za-z0-9_-]{10}$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid ID format' });
+    }
+
+    // Validate isPublic parameter
+    if (typeof isPublic !== 'boolean') {
+      return res.status(400).json({ error: 'isPublic must be a boolean' });
+    }
+
+    const result = await pasteService.updatePasteVisibility(id, userId, isPublic);
+    res.json(result);
+  } catch (error) {
+    console.error('Update paste visibility error:', error);
+    if (error.message.includes('Unauthorized')) {
+      res.status(403).json({ error: error.message });
+    } else if (error.message.includes('not found')) {
+      res.status(404).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Server error' });
+    }
   }
 });
 
