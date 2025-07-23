@@ -368,7 +368,7 @@ const HomePage: React.FC = () => {
 						<div className="editor-container">
 							<Editor
 								key={activeTabId} // Force re-render when tab changes
-								height="calc(100vh - 280px)"
+								height="100%"
 								language={activeTab?.language || "javascript"}
 								theme="vs-dark"
 								value={activeTab?.content || ""}
@@ -376,8 +376,8 @@ const HomePage: React.FC = () => {
 									updateTab(activeTabId, { content: value || "" })
 								}
 								options={{
-									minimap: { enabled: false },
-									fontSize: 14,
+									minimap: { enabled: window.innerWidth > 768 },
+									fontSize: window.innerWidth <= 480 ? 13 : 14,
 									wordWrap: "on",
 									automaticLayout: true,
 									scrollBeyondLastLine: false,
@@ -385,6 +385,18 @@ const HomePage: React.FC = () => {
 									overviewRulerBorder: false,
 									hideCursorInOverviewRuler: true,
 									overviewRulerLanes: 0,
+									lineNumbers: window.innerWidth <= 480 ? "off" : "on",
+									folding: window.innerWidth <= 480 ? false : true,
+									glyphMargin: window.innerWidth <= 480 ? false : true,
+									lineDecorationsWidth: window.innerWidth <= 480 ? 0 : 10,
+									lineNumbersMinChars: window.innerWidth <= 480 ? 0 : 3,
+									padding: { top: 10, bottom: 10 },
+									scrollbar: {
+										vertical: 'auto',
+										horizontal: 'auto',
+										verticalScrollbarSize: 14,
+										horizontalScrollbarSize: 14
+									}
 								}}
 							/>
 						</div>

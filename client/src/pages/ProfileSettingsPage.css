@@ -249,6 +249,8 @@
   color: #fff;
   font-size: 16px;
   transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .form-input:focus {
@@ -388,15 +390,47 @@
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #666 #2d2d2d;
+  }
+  
+  .settings-nav::-webkit-scrollbar {
+    height: 6px;
+  }
+  
+  .settings-nav::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 3px;
+  }
+  
+  .settings-nav::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 3px;
   }
   
   .nav-item {
     white-space: nowrap;
     min-width: auto;
+    padding: 14px 18px;
+    font-size: 15px;
   }
   
   .settings-content {
     padding: 1.5rem;
+  }
+  
+  .form-input {
+    padding: 14px 16px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+  
+  .form-button {
+    align-self: stretch;
+    padding: 14px 24px;
+    font-size: 16px;
+    border-radius: 10px;
+    min-height: 50px;
   }
   
   .danger-item {
@@ -404,10 +438,7 @@
     align-items: stretch;
     text-align: center;
     gap: 1rem;
-  }
-  
-  .form-button {
-    align-self: stretch;
+    padding: 1rem;
   }
   
   .auth-buttons {
@@ -417,5 +448,19 @@
   
   .auth-btn {
     width: 200px;
+    min-height: 48px;
+  }
+  
+  .auth-required h2 {
+    font-size: 1.5rem;
+  }
+  
+  .settings-section h3 {
+    font-size: 1.3rem;
+  }
+  
+  .message {
+    padding: 14px 16px;
+    font-size: 15px;
   }
 }
