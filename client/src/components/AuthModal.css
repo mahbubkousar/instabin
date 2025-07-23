@@ -138,35 +138,6 @@
   background-color: #555;
 }
 
-.auth-button.google {
-  background-color: #fff;
-  color: #333;
-  border: 1px solid #ddd;
-}
-
-.auth-button.google:hover:not(:disabled) {
-  background-color: #f8f8f8;
-}
-
-.auth-divider {
-  display: flex;
-  align-items: center;
-  margin: 20px 0;
-  color: #888;
-}
-
-.auth-divider::before,
-.auth-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background-color: #444;
-}
-
-.auth-divider span {
-  padding: 0 16px;
-  font-size: 14px;
-}
 
 .auth-links {
   text-align: center;

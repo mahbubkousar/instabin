@@ -9,7 +9,7 @@ Simple code sharing platform - paste code, get instant shareable links.
 ## Features
 
 - **Multi-tab support** - create and organize multiple code snippets in one paste
-- **User authentication** - sign up with email/password or Google OAuth
+- **User authentication** - sign up with email/password
 - **Personal dashboard** - manage and organize your code pastes
 - **Profile management** - update display name, change password, and manage account
 - **Anonymous pasting** - no signup required for guest users
@@ -73,7 +73,7 @@ For server-side, set these environment variables:
 
     - Create Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
     - Enable Firestore Database
-    - Enable Authentication with Email/Password and Google providers
+    - Enable Authentication with Email/Password provider
     - Generate service account key
     - Copy web app config for client-side
 
