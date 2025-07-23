@@ -1,55 +1,9 @@
-const admin = require('firebase-admin');
-
-// Initialize Firebase Admin
-let db;
-const initializeFirebase = () => {
-  if (!admin.apps.length) {
-    try {
-      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-          projectId: process.env.FIREBASE_PROJECT_ID
-        });
-      } else {
-        admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID
-        });
-      }
-    } catch (error) {
-      console.error('Firebase initialization error:', error);
-      throw error;
-    }
-  }
-  db = admin.firestore();
-  return db;
-};
-
-const getDb = () => {
-  if (!db) {
-    return initializeFirebase();
-  }
-  return db;
-};
-
-// Authentication helper
-const authenticateUser = async (authHeader) => {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new Error('Unauthorized: No token provided');
-  }
-
-  try {
-    const token = authHeader.substring(7);
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    return decodedToken;
-  } catch (error) {
-    console.error('Authentication error:', error);
-    throw new Error('Unauthorized: Invalid token');
-  }
-};
+const { getDb, authenticateUser } = require('./firebase-utils');
 
 exports.handler = async (event, context) => {
   const { httpMethod: method, queryStringParameters: query, body } = event;
+  
+  console.log('User-pastes function called:', { method, query, path: event.path });
   
   // CORS headers
   const headers = {
@@ -80,11 +34,22 @@ exports.handler = async (event, context) => {
       // Get user's pastes
       const limit = parseInt(query?.limit) || 20;
       
-      const snapshot = await collection
-        .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
-        .limit(limit)
-        .get();
+      // Try with ordering first, fall back to simple query if index doesn't exist
+      let snapshot;
+      try {
+        snapshot = await collection
+          .where('userId', '==', userId)
+          .orderBy('createdAt', 'desc')
+          .limit(limit)
+          .get();
+      } catch (indexError) {
+        console.log('Ordered query failed, trying simple query:', indexError.message);
+        // Fall back to simple query without ordering
+        snapshot = await collection
+          .where('userId', '==', userId)
+          .limit(limit)
+          .get();
+      }
 
       const pastes = [];
       snapshot.forEach((doc) => {
@@ -210,6 +175,14 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('API Error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Environment check:', {
+      hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+      hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+      method,
+      path: event.path,
+      query
+    });
     
     if (error.message.includes('Unauthorized')) {
       return {
@@ -222,7 +195,12 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Server error' })
+      body: JSON.stringify({ 
+        error: 'Server error',
+        details: error.message,
+        // Only include stack trace in development
+        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
+      })
     };
   }
 };

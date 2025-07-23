@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const { getDb, authenticateUser, admin } = require('./firebase-utils');
 const { nanoid } = require('nanoid');
 
 // Input validation helper
@@ -10,37 +10,6 @@ const validateInput = (input, maxLength = 1000) => {
   return cleaned;
 };
 
-// Initialize Firebase Admin
-let db;
-const initializeFirebase = () => {
-  if (!admin.apps.length) {
-    try {
-      if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-          projectId: process.env.FIREBASE_PROJECT_ID
-        });
-      } else {
-        admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID
-        });
-      }
-    } catch (error) {
-      console.error('Firebase initialization error:', error);
-      throw error;
-    }
-  }
-  db = admin.firestore();
-  return db;
-};
-
-const getDb = () => {
-  if (!db) {
-    return initializeFirebase();
-  }
-  return db;
-};
 
 exports.handler = async (event, context) => {
   const { httpMethod: method, queryStringParameters: query, body } = event;
@@ -62,8 +31,8 @@ exports.handler = async (event, context) => {
     };
   }
   
-  // Authentication helper
-  const authenticateUser = async (authHeader) => {
+  // Helper function for optional authentication
+  const optionalAuth = async (authHeader) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null;
     }
@@ -73,7 +42,7 @@ exports.handler = async (event, context) => {
       const decodedToken = await admin.auth().verifyIdToken(token);
       return decodedToken;
     } catch (error) {
-      console.error('Authentication error:', error);
+      console.log('Optional auth failed:', error.message);
       return null;
     }
   };
@@ -87,7 +56,7 @@ exports.handler = async (event, context) => {
       const requestData = JSON.parse(body);
       
       // Check for authentication
-      const user = await authenticateUser(event.headers.authorization);
+      const user = await optionalAuth(event.headers.authorization);
       if (user) {
         requestData.userId = user.uid;
       }
