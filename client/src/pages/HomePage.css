@@ -63,6 +63,7 @@
   align-items: center;
   margin-bottom: 1rem;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .control-group {
@@ -301,6 +302,8 @@
   overflow: hidden;
   border-radius: 0 0 12px 12px;
   position: relative;
+  width: 100%;
+  min-height: 400px;
 }
 
 .editor-container::before {
@@ -532,22 +535,29 @@
   .controls {
     flex-direction: column;
     gap: 0.75rem;
+    align-items: stretch;
   }
   
   .control-group {
+    display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
   }
   
   .title-input, .language-select {
     padding: 0.875rem;
     font-size: 16px; /* Prevent zoom on iOS */
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .share-button {
     padding: 0.875rem 1.5rem;
     font-size: 0.95rem;
     width: 100%;
+    margin-top: 0.5rem;
+    order: 3;
   }
   
   .tabs-container {
@@ -577,6 +587,7 @@
   
   .editor-container {
     min-height: 350px;
+    width: 100%;
   }
   
   .footer {
@@ -595,17 +606,26 @@
   }
   
   .controls {
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1rem;
+    align-items: stretch;
   }
   
   .control-group {
-    flex: 1;
-    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  
+  .title-input, .language-select {
+    width: 100%;
+    box-sizing: border-box;
   }
   
   .share-button {
-    min-width: 140px;
+    width: 100%;
+    margin-top: 0.5rem;
   }
 }
 

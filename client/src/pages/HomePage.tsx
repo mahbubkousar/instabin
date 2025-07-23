@@ -369,6 +369,7 @@ const HomePage: React.FC = () => {
 							<Editor
 								key={activeTabId} // Force re-render when tab changes
 								height="100%"
+								width="100%"
 								language={activeTab?.language || "javascript"}
 								theme="vs-dark"
 								value={activeTab?.content || ""}
@@ -376,8 +377,8 @@ const HomePage: React.FC = () => {
 									updateTab(activeTabId, { content: value || "" })
 								}
 								options={{
-									minimap: { enabled: window.innerWidth > 768 },
-									fontSize: window.innerWidth <= 480 ? 13 : 14,
+									minimap: { enabled: false },
+									fontSize: 14,
 									wordWrap: "on",
 									automaticLayout: true,
 									scrollBeyondLastLine: false,
@@ -385,18 +386,24 @@ const HomePage: React.FC = () => {
 									overviewRulerBorder: false,
 									hideCursorInOverviewRuler: true,
 									overviewRulerLanes: 0,
-									lineNumbers: window.innerWidth <= 480 ? "off" : "on",
-									folding: window.innerWidth <= 480 ? false : true,
-									glyphMargin: window.innerWidth <= 480 ? false : true,
-									lineDecorationsWidth: window.innerWidth <= 480 ? 0 : 10,
-									lineNumbersMinChars: window.innerWidth <= 480 ? 0 : 3,
+									lineNumbers: "on",
+									folding: true,
+									glyphMargin: true,
+									lineDecorationsWidth: 10,
+									lineNumbersMinChars: 3,
 									padding: { top: 10, bottom: 10 },
 									scrollbar: {
 										vertical: 'auto',
 										horizontal: 'auto',
 										verticalScrollbarSize: 14,
 										horizontalScrollbarSize: 14
-									}
+									},
+									readOnly: false,
+									domReadOnly: false,
+									selectOnLineNumbers: true,
+									roundedSelection: false,
+									cursorStyle: 'line',
+									mouseWheelZoom: false
 								}}
 							/>
 						</div>
