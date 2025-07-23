@@ -174,28 +174,67 @@ const ViewPage: React.FC = () => {
 			</header>
 
 			<main className="main-content">
-				<div className="editor-container">
-					<Editor
-						height="calc(100vh - 120px)"
-						language={paste.type === "multi-tab" && paste.tabs ? paste.tabs[activeTabIndex]?.language || "text" : paste.language}
-						theme="vs-dark"
-						value={paste.type === "multi-tab" && paste.tabs ? paste.tabs[activeTabIndex]?.content || "" : paste.content}
-						options={{
-							readOnly: true,
-							minimap: { enabled: false },
-							fontSize: 14,
-							wordWrap: "on",
-							automaticLayout: true,
-							scrollBeyondLastLine: false,
-							renderLineHighlight: "none",
-							overviewRulerBorder: false,
-							hideCursorInOverviewRuler: true,
-							overviewRulerLanes: 0,
-							contextmenu: false,
-							selectOnLineNumbers: true,
-						}}
-					/>
-				</div>
+				{paste.type === "multi-tab" && paste.tabs ? (
+					<div className="tabs-container">
+						<div className="tabs-header">
+							{paste.tabs.map((tab, index) => (
+								<div
+									key={index}
+									className={`tab ${activeTabIndex === index ? "active" : ""}`}
+									onClick={() => setActiveTabIndex(index)}
+								>
+									<span className="tab-title">{tab.title}</span>
+									<span className="tab-language">({tab.language})</span>
+								</div>
+							))}
+						</div>
+						<div className="editor-container">
+							<Editor
+								height="calc(100vh - 160px)"
+								language={paste.tabs[activeTabIndex]?.language || "text"}
+								theme="vs-dark"
+								value={paste.tabs[activeTabIndex]?.content || ""}
+								options={{
+									readOnly: true,
+									minimap: { enabled: false },
+									fontSize: 14,
+									wordWrap: "on",
+									automaticLayout: true,
+									scrollBeyondLastLine: false,
+									renderLineHighlight: "none",
+									overviewRulerBorder: false,
+									hideCursorInOverviewRuler: true,
+									overviewRulerLanes: 0,
+									contextmenu: false,
+									selectOnLineNumbers: true,
+								}}
+							/>
+						</div>
+					</div>
+				) : (
+					<div className="editor-container">
+						<Editor
+							height="calc(100vh - 120px)"
+							language={paste.language}
+							theme="vs-dark"
+							value={paste.content}
+							options={{
+								readOnly: true,
+								minimap: { enabled: false },
+								fontSize: 14,
+								wordWrap: "on",
+								automaticLayout: true,
+								scrollBeyondLastLine: false,
+								renderLineHighlight: "none",
+								overviewRulerBorder: false,
+								hideCursorInOverviewRuler: true,
+								overviewRulerLanes: 0,
+								contextmenu: false,
+								selectOnLineNumbers: true,
+							}}
+						/>
+					</div>
+				)}
 			</main>
 
 			<footer className="footer">
